@@ -1,0 +1,58 @@
+version: '3.7'
+
+services:
+  php-apache:
+    container_name: FDE_server
+    build:
+      context: .
+      dockerfile: Dockerfile    
+    volumes:
+      - '.:/var/www/html/'
+    ports:
+      - '${APP_PORT:-80}:80'
+
+    networks:
+      - FDE_network
+    depends_on:
+      - mysql
+
+  mysql:
+    container_name: FDE_database
+    image: mysql:latest
+    volumes:
+      - 'apache-mysql:/var/lib/mysql'
+    ports:
+      - '${DB_PORT:-3306}:3306'
+    environment:
+      MYSQL_DATABASE: '${DB_DATABASE}'
+      MYSQL_USER: test
+      MYSQL_PASSWORD: test      
+      MYSQL_ROOT_PASSWORD: ''
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+    networks:
+      - FDE_network
+    
+  node:
+    container_name: FDE_npm
+    image: node:latest
+    working_dir: /home/node/app
+    volumes:
+      - ./:/home/node/app
+    command: >
+      bash -c "npm install"
+  
+  composer:
+    command: ["composer", "install"]
+    container_name: FDE_composer
+    image: composer:latest
+    volumes:
+      - '.:/app'
+
+networks:
+  FDE_network:
+    driver: bridge
+
+volumes:
+  apache-mysql:
+    driver: local
